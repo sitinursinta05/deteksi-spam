@@ -48,7 +48,7 @@ menu = st.sidebar.radio("Navigasi", ["🏠 Beranda", "📧 Deteksi Spam"])
 if menu == "🏠 Beranda":
     st.title("📬 Selamat Datang di Aplikasi Deteksi Spam")
     st.markdown("""
-        Aplikasi ini menggunakan model **Naive Bayes yang dioptimasi dengan PSO** untuk mendeteksi apakah sebuah email merupakan **Spam** atau **Bukan Spam (Ham)**.
+        Aplikasi ini menggunakan model **Random Forest** untuk mendeteksi apakah sebuah email merupakan **Spam** atau **Bukan Spam (Ham)**.
 
         ### ✨ Fitur:
         - Prediksi akurat menggunakan model terlatih.
