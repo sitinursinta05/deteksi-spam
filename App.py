@@ -1,11 +1,13 @@
 import streamlit as st
 import joblib
 from nltk.tokenize import word_tokenize
-from nltk.stem import PorterStemmer
 import nltk
+import re
+import string
 import time
+from Sastrawi.Stemmer.StemmerFactory import StemmerFactory
 
-# Unduh resource NLTK dengan aman
+# Unduh resource NLTK
 def safe_nltk_download(resource):
     max_tries = 3
     for i in range(max_tries):
@@ -17,26 +19,26 @@ def safe_nltk_download(resource):
     else:
         pass
 
-# Download tokenizers yang dibutuhkan
 safe_nltk_download('punkt')
-safe_nltk_download('punkt_tab')
 
-# Cek ketersediaan tokenizer
-try:
-    nltk.data.find('tokenizers/punkt')
-except LookupError:
-    safe_nltk_download('punkt')
+# Inisialisasi stemmer Sastrawi
+factory = StemmerFactory()
+stemmer = factory.create_stemmer()
+
+# Fungsi preprocessing disamakan dengan proses training
+def preprocess(text):
+    text = text.lower()
+    text = re.sub(r"http\S+|www.\S+", "", text)  # Hapus URL
+    text = re.sub(r"\d+", "", text)              # Hapus angka
+    text = text.translate(str.maketrans("", "", string.punctuation))  # Hapus tanda baca
+    text = re.sub(r"\s+", " ", text).strip()     # Hapus spasi berlebih
+    tokens = word_tokenize(text)
+    stemmed = [stemmer.stem(word) for word in tokens]
+    return ' '.join(stemmed)
 
 # Load model dan vectorizer
 model = joblib.load('RandomForest.pkl')
 vectorizer = joblib.load('tfidf_vectorizer.pkl')
-
-# Preprocessing fungsi
-stemmer = PorterStemmer()
-def preprocess(text):
-    tokens = word_tokenize(text)
-    stemmed = ' '.join([stemmer.stem(word) for word in tokens])
-    return stemmed
 
 # Konfigurasi halaman
 st.set_page_config(page_title="Email Spam Detector", page_icon="📧", layout="centered")
@@ -74,6 +76,10 @@ elif menu == "📧 Deteksi Spam":
             vectorized_input = vectorizer.transform([preprocessed_text])
             prediction = model.predict(vectorized_input)[0]
             prediction_proba = model.predict_proba(vectorized_input)[0]
+
+            # Tampilkan debug opsional
+            # st.write("Teks setelah preprocessing:", preprocessed_text)
+            # st.write("Probabilitas prediksi:", prediction_proba)
 
             if prediction == 1:
                 label = "📮 SPAM"
