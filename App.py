@@ -1,44 +1,45 @@
 import streamlit as st
 import joblib
-import re
-import string
-import time
 import nltk
+import time
 from nltk.tokenize import word_tokenize
-from Sastrawi.Stemmer.StemmerFactory import StemmerFactory
+from nltk.stem import PorterStemmer
 
-# Cek dan download resource NLTK jika belum ada
+# --- Cek dan download resource NLTK secara aman ---
+def safe_nltk_download(resource):
+    max_tries = 3
+    for _ in range(max_tries):
+        try:
+            nltk.download(resource)
+            break
+        except:
+            time.sleep(1)
+
+# Pastikan resource tokenizer tersedia
 try:
     nltk.data.find('tokenizers/punkt')
 except LookupError:
-    nltk.download('punkt')
+    safe_nltk_download('punkt')
 
-# Inisialisasi stemmer
-factory = StemmerFactory()
-stemmer = factory.create_stemmer()
-
-# Fungsi preprocessing (harus sama seperti saat training)
-def preprocess(text):
-    text = text.lower()
-    text = re.sub(r"http\S+|www.\S+", "", text)  # Hapus URL
-    text = re.sub(r"\d+", "", text)              # Hapus angka
-    text = text.translate(str.maketrans("", "", string.punctuation))  # Hapus tanda baca
-    text = re.sub(r"\s+", " ", text).strip()     # Hapus spasi berlebih
-    tokens = word_tokenize(text)                 # Tokenisasi
-    stemmed = [stemmer.stem(word) for word in tokens]
-    return ' '.join(stemmed)
-
-# Load model dan vectorizer
+# --- Load model dan vectorizer ---
 model = joblib.load('RandomForest.pkl')
 vectorizer = joblib.load('tfidf_vectorizer.pkl')
 
-# Konfigurasi halaman
+# --- Preprocessing text ---
+stemmer = PorterStemmer()
+
+def preprocess(text):
+    tokens = word_tokenize(text)
+    stemmed = [stemmer.stem(word) for word in tokens]
+    return ' '.join(stemmed)
+
+# --- Konfigurasi halaman utama ---
 st.set_page_config(page_title="Email Spam Detector", page_icon="📧", layout="centered")
 
-# Navigasi sidebar
+# --- Navigasi sidebar ---
 menu = st.sidebar.radio("Navigasi", ["🏠 Beranda", "📧 Deteksi Spam"])
 
-# Halaman Beranda
+# --- Halaman Beranda ---
 if menu == "🏠 Beranda":
     st.title("📬 Selamat Datang di Aplikasi Deteksi Spam")
     st.markdown("""
@@ -52,7 +53,7 @@ if menu == "🏠 Beranda":
         Silakan pilih menu **📧 Deteksi Spam** di sebelah kiri untuk mulai menggunakan aplikasi ini.
     """)
 
-# Halaman Deteksi Spam
+# --- Halaman Deteksi Spam ---
 elif menu == "📧 Deteksi Spam":
     st.title("📧 Email Spam Classifier")
     st.write("Masukkan isi email di bawah ini, dan sistem akan memprediksi apakah email tersebut merupakan **Spam** atau **Bukan Spam (Ham)**.")
@@ -63,13 +64,13 @@ elif menu == "📧 Deteksi Spam":
         if not user_input.strip():
             st.warning("Silakan masukkan isi email terlebih dahulu.")
         else:
-            # Preprocessing dan prediksi
+            # --- Prediksi ---
             preprocessed_text = preprocess(user_input)
             vectorized_input = vectorizer.transform([preprocessed_text])
             prediction = model.predict(vectorized_input)[0]
             prediction_proba = model.predict_proba(vectorized_input)[0]
 
-            # Hasil prediksi
+            # --- Tampilkan hasil ---
             if prediction == 1:
                 label = "📮 SPAM"
                 confidence = prediction_proba[1] * 100
