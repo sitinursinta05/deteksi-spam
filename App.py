@@ -1,38 +1,30 @@
 import streamlit as st
 import joblib
-from nltk.tokenize import word_tokenize
-import nltk
 import re
 import string
 import time
+import nltk
+from nltk.tokenize import word_tokenize
 from Sastrawi.Stemmer.StemmerFactory import StemmerFactory
 
-# Unduh resource NLTK
-def safe_nltk_download(resource):
-    max_tries = 3
-    for i in range(max_tries):
-        try:
-            nltk.download(resource)
-            break
-        except PermissionError:
-            time.sleep(1)
-    else:
-        pass
+# Cek dan download resource NLTK jika belum ada
+try:
+    nltk.data.find('tokenizers/punkt')
+except LookupError:
+    nltk.download('punkt')
 
-safe_nltk_download('punkt')
-
-# Inisialisasi stemmer Sastrawi
+# Inisialisasi stemmer
 factory = StemmerFactory()
 stemmer = factory.create_stemmer()
 
-# Fungsi preprocessing disamakan dengan proses training
+# Fungsi preprocessing (harus sama seperti saat training)
 def preprocess(text):
     text = text.lower()
     text = re.sub(r"http\S+|www.\S+", "", text)  # Hapus URL
     text = re.sub(r"\d+", "", text)              # Hapus angka
     text = text.translate(str.maketrans("", "", string.punctuation))  # Hapus tanda baca
     text = re.sub(r"\s+", " ", text).strip()     # Hapus spasi berlebih
-    tokens = word_tokenize(text)
+    tokens = word_tokenize(text)                 # Tokenisasi
     stemmed = [stemmer.stem(word) for word in tokens]
     return ' '.join(stemmed)
 
@@ -43,7 +35,7 @@ vectorizer = joblib.load('tfidf_vectorizer.pkl')
 # Konfigurasi halaman
 st.set_page_config(page_title="Email Spam Detector", page_icon="📧", layout="centered")
 
-# Navigasi
+# Navigasi sidebar
 menu = st.sidebar.radio("Navigasi", ["🏠 Beranda", "📧 Deteksi Spam"])
 
 # Halaman Beranda
@@ -71,16 +63,13 @@ elif menu == "📧 Deteksi Spam":
         if not user_input.strip():
             st.warning("Silakan masukkan isi email terlebih dahulu.")
         else:
-            # Proses prediksi
+            # Preprocessing dan prediksi
             preprocessed_text = preprocess(user_input)
             vectorized_input = vectorizer.transform([preprocessed_text])
             prediction = model.predict(vectorized_input)[0]
             prediction_proba = model.predict_proba(vectorized_input)[0]
 
-            # Tampilkan debug opsional
-            # st.write("Teks setelah preprocessing:", preprocessed_text)
-            # st.write("Probabilitas prediksi:", prediction_proba)
-
+            # Hasil prediksi
             if prediction == 1:
                 label = "📮 SPAM"
                 confidence = prediction_proba[1] * 100
