@@ -84,5 +84,3 @@ elif menu == "📧 Deteksi Spam":
 
             st.success(f"Hasil Prediksi: **{label}**")
             st.info(f"Akurasi deteksi berdasarkan input ini: **{confidence:.2f}%**")
-
-kenapa ya, dia ke dataset baru tidak bisa atau salah label
