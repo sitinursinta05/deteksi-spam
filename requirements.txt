@@ -1,4 +1,5 @@
 streamlit
 nltk
+Sastrawi
 scikit-learn
 joblib
